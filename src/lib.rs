@@ -208,7 +208,7 @@ pub use subscription::SubscriptionType;
 pub use async_graphql_parser as parser;
 pub use async_graphql_value::{
     from_value, to_value, value, ConstValue as Value, DeserializerError, Name, Number,
-    SerializerError,
+    SerializerError, Variables,
 };
 pub use base::{
     Description, InputObjectType, InputType, InterfaceType, ObjectType, OutputType, Type, UnionType,
@@ -265,6 +265,7 @@ pub type FieldResult<T> = Result<T>;
 /// | skip          | Skip this field           | bool     | Y        |
 /// | name          | Field name                | string   | Y        |
 /// | desc          | Field description         | string   | Y        |
+/// | deprecation   | Field deprecated          | bool     | Y        |
 /// | deprecation   | Field deprecation reason  | string   | Y        |
 /// | cache_control | Field cache control       | [`CacheControl`](struct.CacheControl.html) | Y        |
 /// | external      | Mark a field as owned by another service. This allows service A to use fields from service B while also knowing at runtime the types of that field. | bool | Y |
@@ -347,7 +348,7 @@ pub type FieldResult<T> = Result<T>;
 ///     }
 /// }
 ///
-/// async_std::task::block_on(async move {
+/// tokio::runtime::Runtime::new().unwrap().block_on(async move {
 ///     let schema = Schema::new(QueryRoot { value: 10 }, EmptyMutation, EmptySubscription);
 ///     let res = schema.execute(r#"{
 ///         value
@@ -405,7 +406,7 @@ pub type FieldResult<T> = Result<T>;
 ///     }
 /// }
 ///
-/// async_std::task::block_on(async move {
+/// tokio::runtime::Runtime::new().unwrap().block_on(async move {
 ///     let schema = Schema::new(QueryRoot, EmptyMutation, EmptySubscription);
 ///     let res = schema.execute("{ objs { name } }").await.into_result().unwrap().data;
 ///     assert_eq!(res, value!({
@@ -441,6 +442,7 @@ pub use async_graphql_derive::Object;
 /// |---------------|---------------------------|----------|----------|
 /// | skip          | Skip this field           | bool     | Y        |
 /// | name          | Field name                | string   | Y        |
+/// | deprecation   | Field deprecated          | bool     | Y        |
 /// | deprecation   | Field deprecation reason  | string   | Y        |
 /// | owned         | Field resolver return a ownedship value  | bool   | Y        |
 /// | cache_control | Field cache control       | [`CacheControl`](struct.CacheControl.html) | Y        |
@@ -461,7 +463,7 @@ pub use async_graphql_derive::Object;
 ///     value: i32,
 /// }
 ///
-/// async_std::task::block_on(async move {
+/// tokio::runtime::Runtime::new().unwrap().block_on(async move {
 ///     let schema = Schema::new(QueryRoot{ value: 10 }, EmptyMutation, EmptySubscription);
 ///     let res = schema.execute("{ value }").await.into_result().unwrap().data;
 ///     assert_eq!(res, value!({
@@ -490,6 +492,7 @@ pub use async_graphql_derive::SimpleObject;
 /// | Attribute   | description               | Type     | Optional |
 /// |-------------|---------------------------|----------|----------|
 /// | name        | Item name                 | string   | Y        |
+/// | deprecation | Item deprecated           | bool     | Y        |
 /// | deprecation | Item deprecation reason   | string   | Y        |
 /// | visible       | If `false`, it will not be displayed in introspection. *[See also the Book](https://async-graphql.github.io/async-graphql/en/visibility.html).* | bool | Y |
 /// | visible       | Call the specified function. If the return value is `false`, it will not be displayed in introspection. | string | Y |
@@ -523,7 +526,7 @@ pub use async_graphql_derive::SimpleObject;
 ///     }
 /// }
 ///
-/// async_std::task::block_on(async move {
+/// tokio::runtime::Runtime::new().unwrap().block_on(async move {
 ///     let schema = Schema::new(QueryRoot{ value1: MyEnum::A, value2: MyEnum::B }, EmptyMutation, EmptySubscription);
 ///     let res = schema.execute("{ value1 value2 }").await.into_result().unwrap().data;
 ///     assert_eq!(res, value!({ "value1": "A", "value2": "b" }));
@@ -580,7 +583,7 @@ pub use async_graphql_derive::Enum;
 ///     }
 /// }
 ///
-/// async_std::task::block_on(async move {
+/// tokio::runtime::Runtime::new().unwrap().block_on(async move {
 ///     let schema = Schema::new(QueryRoot, EmptyMutation, EmptySubscription);
 ///     let res = schema.execute(r#"
 ///     {
@@ -616,6 +619,7 @@ pub use async_graphql_derive::InputObject;
 /// | type        | Field type                | string   | N        |
 /// | method      | Rust resolver method name. If specified, `name` will not be camelCased in schema definition | string | Y |
 /// | desc        | Field description         | string   | Y        |
+/// | deprecation | Field deprecated          | bool     | Y        |
 /// | deprecation | Field deprecation reason  | string   | Y        |
 /// | arg         | Field arguments           | [InterfaceFieldArgument]          | Y        |
 /// | external    | Mark a field as owned by another service. This allows service A to use fields from service B while also knowing at runtime the types of that field. | bool | Y |
@@ -709,7 +713,7 @@ pub use async_graphql_derive::InputObject;
 ///     }
 /// }
 ///
-/// async_std::task::block_on(async move {
+/// tokio::runtime::Runtime::new().unwrap().block_on(async move {
 ///     let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription).data("hello".to_string()).finish();
 ///     let res = schema.execute(r#"
 ///     {
@@ -782,7 +786,7 @@ pub use async_graphql_derive::Interface;
 ///     }
 /// }
 ///
-/// async_std::task::block_on(async move {
+/// tokio::runtime::Runtime::new().unwrap().block_on(async move {
 ///     let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription).data("hello".to_string()).finish();
 ///     let res = schema.execute(r#"
 ///     {
@@ -821,6 +825,7 @@ pub use async_graphql_derive::Union;
 /// | name          | Object name               | string   | Y        |
 /// | rename_fields | Rename all the fields according to the given case convention. The possible values are "lowercase", "UPPERCASE", "PascalCase", "camelCase", "snake_case", "SCREAMING_SNAKE_CASE".| string   | Y        |
 /// | rename_args   | Rename all the arguments according to the given case convention. The possible values are "lowercase", "UPPERCASE", "PascalCase", "camelCase", "snake_case", "SCREAMING_SNAKE_CASE".| string   | Y        |
+/// | extends       | Add fields to an entity that's defined in another service | bool | Y |
 /// | use_type_description | Specifies that the description of the type is on the type declaration. [`Description`]()(derive.Description.html) | bool | Y |
 ///
 /// # Field parameters
@@ -828,6 +833,7 @@ pub use async_graphql_derive::Union;
 /// | Attribute   | description               | Type     | Optional |
 /// |-------------|---------------------------|----------|----------|
 /// | name        | Field name                | string   | Y        |
+/// | deprecation | Field deprecated          | bool     | Y        |
 /// | deprecation | Field deprecation reason  | string   | Y        |
 /// | guard       | Field of guard            | [`Guard`](guard/trait.Guard.html) | Y        |
 /// | visible       | If `false`, it will not be displayed in introspection. *[See also the Book](https://async-graphql.github.io/async-graphql/en/visibility.html).* | bool | Y |
@@ -893,7 +899,7 @@ pub use async_graphql_derive::Scalar;
 ///     }
 /// }
 ///
-/// async_std::task::block_on(async move {
+/// tokio::runtime::Runtime::new().unwrap().block_on(async move {
 ///     let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription).data("hello".to_string()).finish();
 ///
 ///     let res = schema.execute("{ value }").await.into_result().unwrap().data;
@@ -940,7 +946,6 @@ pub use async_graphql_derive::NewType;
 /// | name          | Object name               | string   | Y        |
 /// | cache_control | Object cache control      | [`CacheControl`](struct.CacheControl.html) | Y        |
 /// | extends       | Add fields to an entity that's defined in another service | bool | Y |
-/// | use_type_description | Specifies that the description of the type is on the type declaration. [`Description`]()(derive.Description.html) | bool | Y |
 /// | visible       | If `false`, it will not be displayed in introspection. *[See also the Book](https://async-graphql.github.io/async-graphql/en/visibility.html).* | bool | Y |
 /// | visible       | Call the specified function. If the return value is `false`, it will not be displayed in introspection. | string | Y |
 ///
@@ -980,6 +985,9 @@ pub use async_graphql_derive::MergedObject;
 /// | Attribute     | description               | Type     | Optional |
 /// |---------------|---------------------------|----------|----------|
 /// | name          | Object name               | string   | Y        |
+/// | extends       | Add fields to an entity that's defined in another service | bool | Y |
+/// | visible       | If `false`, it will not be displayed in introspection. *[See also the Book](https://async-graphql.github.io/async-graphql/en/visibility.html).* | bool | Y |
+/// | visible       | Call the specified function. If the return value is `false`, it will not be displayed in introspection. | string | Y |
 ///
 /// # Examples
 ///
@@ -1039,7 +1047,7 @@ pub use async_graphql_derive::MergedSubscription;
 ///     obj: MyObj,
 /// }
 ///
-/// async_std::task::block_on(async move {
+/// tokio::runtime::Runtime::new().unwrap().block_on(async move {
 ///     let schema = Schema::new(Query::default(), EmptyMutation, EmptySubscription);
 ///     assert_eq!(
 ///         schema

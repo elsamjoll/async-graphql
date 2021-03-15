@@ -48,7 +48,7 @@ impl Registry {
                 continue;
             }
 
-            if field.description.is_some() && !federation {
+            if field.description.is_some() {
                 writeln!(
                     sdl,
                     "\t\"\"\"\n\t{}\n\t\"\"\"",
@@ -97,7 +97,7 @@ impl Registry {
                     export_scalar = false;
                 }
                 if export_scalar {
-                    if description.is_some() && !federation {
+                    if description.is_some() {
                         writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
                     }
                     writeln!(sdl, "scalar {}", name).ok();
@@ -116,13 +116,7 @@ impl Registry {
                     return;
                 }
 
-                if let Some(subscription_type) = &self.subscription_type {
-                    if name == subscription_type && federation {
-                        return;
-                    }
-                }
-
-                if description.is_some() && !federation {
+                if description.is_some() {
                     writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
                 }
                 if federation && *extends {
@@ -151,7 +145,7 @@ impl Registry {
                 description,
                 ..
             } => {
-                if description.is_some() && !federation {
+                if description.is_some() {
                     writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
                 }
                 if federation && *extends {
@@ -177,7 +171,7 @@ impl Registry {
                 description,
                 ..
             } => {
-                if description.is_some() && !federation {
+                if description.is_some() {
                     writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
                 }
                 write!(sdl, "enum {} ", name).ok();
@@ -193,16 +187,16 @@ impl Registry {
                 description,
                 ..
             } => {
-                if description.is_some() && !federation {
+                if description.is_some() {
                     writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
                 }
                 write!(sdl, "input {} ", name).ok();
                 writeln!(sdl, "{{").ok();
                 for field in input_fields.values() {
                     if let Some(description) = field.description {
-                        writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description).ok();
+                        writeln!(sdl, "\t\"\"\"\n\t{}\n\t\"\"\"", description).ok();
                     }
-                    writeln!(sdl, "{}", export_input_value(&field)).ok();
+                    writeln!(sdl, "\t{}", export_input_value(&field)).ok();
                 }
                 writeln!(sdl, "}}").ok();
             }
@@ -212,7 +206,7 @@ impl Registry {
                 description,
                 ..
             } => {
-                if description.is_some() && !federation {
+                if description.is_some() {
                     writeln!(sdl, "\"\"\"\n{}\n\"\"\"", description.unwrap()).ok();
                 }
                 write!(sdl, "union {} =", name).ok();

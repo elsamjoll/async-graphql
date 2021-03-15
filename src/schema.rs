@@ -33,7 +33,6 @@ pub struct SchemaBuilder<Query, Mutation, Subscription> {
     complexity: Option<usize>,
     depth: Option<usize>,
     extensions: Vec<Box<dyn ExtensionFactory>>,
-    enable_federation: bool,
 }
 
 impl<Query, Mutation, Subscription> SchemaBuilder<Query, Mutation, Subscription> {
@@ -47,7 +46,7 @@ impl<Query, Mutation, Subscription> SchemaBuilder<Query, Mutation, Subscription>
 
     /// Disable introspection queries.
     pub fn disable_introspection(mut self) -> Self {
-        self.query.disable_introspection = true;
+        self.registry.disable_introspection = true;
         self
     }
 
@@ -102,20 +101,26 @@ impl<Query, Mutation, Subscription> SchemaBuilder<Query, Mutation, Subscription>
 
     /// Enable federation, which is automatically enabled if the Query has least one entity definition.
     pub fn enable_federation(mut self) -> Self {
-        self.enable_federation = true;
+        self.registry.enable_federation = true;
         self
     }
 
-    /// Override the description of the specified type.
+    /// Override the name of the specified type.
     pub fn override_description<T: Type>(mut self, desc: &'static str) -> Self {
         self.registry.set_description::<T>(desc);
+        self
+    }
+
+    /// Override the name of the specified type.
+    pub fn override_name<T: Type>(mut self, new_name: impl Into<String>) -> Self {
+        self.registry.set_name::<T>(new_name.into());
         self
     }
 
     /// Build schema.
     pub fn finish(mut self) -> Schema<Query, Mutation, Subscription> {
         // federation
-        if self.enable_federation || self.registry.has_entities() {
+        if self.registry.enable_federation || self.registry.has_entities() {
             self.registry.create_federation_types();
         }
 
@@ -217,10 +222,7 @@ where
     ) -> SchemaBuilder<Query, Mutation, Subscription> {
         SchemaBuilder {
             validation_mode: ValidationMode::Strict,
-            query: QueryRoot {
-                inner: query,
-                disable_introspection: false,
-            },
+            query: QueryRoot { inner: query },
             mutation,
             subscription,
             registry: Self::create_registry(),
@@ -228,7 +230,6 @@ where
             complexity: None,
             depth: None,
             extensions: Default::default(),
-            enable_federation: false,
         }
     }
 
@@ -248,6 +249,8 @@ where
             } else {
                 Some(Subscription::type_name().to_string())
             },
+            disable_introspection: false,
+            enable_federation: false,
         };
 
         registry.add_directive(MetaDirective {
